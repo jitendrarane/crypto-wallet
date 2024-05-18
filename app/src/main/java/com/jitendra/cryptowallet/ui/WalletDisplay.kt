@@ -69,7 +69,7 @@ fun WalletDisplay(
             is WalletViewModel.UIState.Success -> {
 //                cryptoState.value = prices(Dai(0.0), Pepe(0.0), UsdCoin(0.0), Weth(0.0))
                 val cryptoValues = (walletState.value as WalletViewModel.UIState.Success).tokens
-                DisplayTokenList(cryptoValues)
+                DisplayTokenList(cryptoValues, viewModel)
             }
             is WalletViewModel.UIState.Error -> {
                 Text(text = (walletState.value as WalletViewModel.UIState.Error).message)
@@ -82,34 +82,50 @@ fun WalletDisplay(
 }
 
 @Composable
-fun DisplayTokenList(tokens: List<Token>) {
+fun DisplayTokenList(tokens: List<Token>, viewModel: WalletViewModel) {
+    CryptoListItemHeader()
     LazyColumn {
         items(tokens.size) { token ->
             val tokenItem = tokens[token]
-            CryptoListItem(tokenItem.logoURL, tokenItem.name, tokenItem.balance.takeLast(10), tokenItem.price.toString())
+            if(tokenItem.balance.toDouble() > 0.0){
+                CryptoListItem(tokenItem.logoURL, tokenItem.name, viewModel.formatNumber(tokenItem.price.toDouble()), viewModel.formatNumber(tokenItem.balance.toDouble()), viewModel.formatNumber(tokenItem.usdValue))
+            }
         }
     }
 }
 
+//@Composable
+//fun DisplayTokenTransactions(tokenTransactions: List<Transactions>) {
+//    LazyColumn {
+//        items(tokens.size) { token ->
+//            val tokenItem = tokens[token]
+//            CryptoListItem(tokenItem.logoURL, tokenItem.name, tokenItem.balance.takeLast(10), tokenItem.price.toString())
+//        }
+//    }
+//}
+
 @Composable
-fun DisplayTokenTransactions(tokenTransactions: List<Transactions>) {
-    LazyColumn {
-        items(tokens.size) { token ->
-            val tokenItem = tokens[token]
-            CryptoListItem(tokenItem.logoURL, tokenItem.name, tokenItem.balance.takeLast(10), tokenItem.price.toString())
-        }
+fun CryptoListItemHeader() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        ItemComposable("Logo")
+        ItemComposable("Name")
+        ItemComposable("Price")
+        ItemComposable("Balance")
+        ItemComposable("BalanceUSD")
     }
 }
-
-
 @Composable
-fun CryptoListItem(logo: String, name: String, balance: String, balanceUSD: String,) {
+fun CryptoListItem(logo: String, name: String, price:String, balance: String, balanceUSD: String,) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         ImageFromUrl(url = logo)
         ItemComposable(name)
+        ItemComposable(price)
         ItemComposable(balance)
         ItemComposable(balanceUSD)
     }

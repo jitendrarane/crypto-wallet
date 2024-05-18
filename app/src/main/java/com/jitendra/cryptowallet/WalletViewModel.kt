@@ -17,6 +17,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.math.BigInteger
+import java.text.DecimalFormat
 import javax.inject.Inject
 
 @HiltViewModel
@@ -87,22 +89,22 @@ class WalletViewModel  @Inject constructor(
             when (token.contractAddress) {
                 TokenType.TokenContractAddresses[TOKEN_DAI] -> {
                     tokenBalances.find { it.contractAddress == TokenType.TokenContractAddresses[TOKEN_DAI] }?.let {
-                        token.copy(balance = it.tokenBalance)
+                        token.copy(balance = parseHexBalance(it.tokenBalance))
                     } ?: token
                 }
                 TokenType.TokenContractAddresses[TOKEN_PEPE] -> {
                     tokenBalances.find { it.contractAddress == TokenType.TokenContractAddresses[TOKEN_PEPE] }?.let {
-                        token.copy(balance = it.tokenBalance)
+                        token.copy(balance = parseHexBalance(it.tokenBalance))
                     } ?: token
                 }
                 TokenType.TokenContractAddresses[TOKEN_USD_COIN] -> {
                     tokenBalances.find { it.contractAddress == TokenType.TokenContractAddresses[TOKEN_USD_COIN] }?.let {
-                        token.copy(balance = it.tokenBalance)
+                        token.copy(balance = parseHexBalance(it.tokenBalance))
                     } ?: token
                 }
                 TokenType.TokenContractAddresses[TOKEN_WETH] -> {
                     tokenBalances.find { it.contractAddress == TokenType.TokenContractAddresses[TOKEN_WETH] }?.let {
-                        token.copy(balance = it.tokenBalance)
+                        token.copy(balance = parseHexBalance(it.tokenBalance))
                     } ?: token
                 }
                 else -> token
@@ -113,12 +115,21 @@ class WalletViewModel  @Inject constructor(
         for (token in TokenType.TokenContractAddresses) {
             val result = alchemyApiService.getTokenMetadata(TokenMetaDataRequest(params = listOf( token.value)))
             if(result.result.name.isNotEmpty()) {
-                tokens.add(Token(token.value, result.result.name, result.result.logo, result.result.decimals, "0.0", 0.0))
+                tokens.add(Token(token.value, result.result.name, result.result.logo, result.result.decimals, BigInteger.ZERO, 0.0))
             }
         }
     }
+    private fun parseHexBalance(hexBalance: String): BigInteger
+    {
+        val cleanHex = hexBalance.removePrefix("0x")
+        return BigInteger(cleanHex, 16)
+    }
 
-    private fun String.convertHexStringToDouble(): Double = this.toLong(16).toDouble()
+    fun formatNumber(number: Double): String {
+        val decimalFormat = DecimalFormat("#,##0.00")
+        val number = decimalFormat.format(number)
+        if(number >)
+    }
 
     sealed class UIState {
         data object Initializing : UIState()
