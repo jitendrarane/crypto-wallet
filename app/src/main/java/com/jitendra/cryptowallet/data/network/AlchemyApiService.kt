@@ -18,6 +18,9 @@ interface AlchemyApiService {
     @Headers("accept: application/json", "content-type: application/json")
     @POST("v2/5k4MV3dK58Pze4ArYJ8WoClg_iIgy1cU")
     suspend fun getTokenBalances(@Body requestBody: TokenBalancesRequest): Response<TokenBalancesResponse>
+    @Headers("accept: application/json", "content-type: application/json")
+    @POST("v2/5k4MV3dK58Pze4ArYJ8WoClg_iIgy1cU")
+    suspend fun getAssetTransfers(@Body requestBody: AssetTransferRequest): Response<AssetTransferResponse>
 
 
     companion object {

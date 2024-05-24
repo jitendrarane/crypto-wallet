@@ -18,40 +18,40 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.unit.dp
-import com.jitendra.cryptowallet.WalletViewModel
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberImagePainter
+import com.jitendra.cryptowallet.WalletViewModel
+import com.jitendra.cryptowallet.data.CryptoTransacation
 import com.jitendra.cryptowallet.data.Token
 
-
+@Suppress("ktlint:standard:function-naming")
 @Composable
-fun WalletDisplay(
-    onCryptoClicked: (String) -> Unit,
-    viewModel : WalletViewModel = hiltViewModel()
-) {
+fun WalletDisplay(viewModel: WalletViewModel = hiltViewModel()) {
     val searchQuery = rememberSaveable { mutableStateOf("") }
     val walletState = viewModel.walletState.collectAsState()
     val keyboardController = LocalSoftwareKeyboardController.current
-//    val cryptoState = rememberSaveable { mutableStateOf(prices(Dai(0.0),Pepe(0.0),UsdCoin(0.0),Weth(0.0))) }
 
     Column {
         OutlinedTextField(
             value = searchQuery.value,
             onValueChange = { searchQuery.value = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
             label = { Text(text = "Wallet Address") },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = {
-                viewModel.searchWallet(searchQuery.value)
-                keyboardController?.hide()
-            })
+            keyboardActions =
+                KeyboardActions(onSearch = {
+                    viewModel.searchWallet(searchQuery.value)
+                    keyboardController?.hide()
+                }),
         )
         Button(
             onClick = {
@@ -59,17 +59,18 @@ fun WalletDisplay(
                 viewModel.searchWallet(searchQuery.value)
                 keyboardController?.hide()
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
         ) {
             Text(text = "Get Wallet Data")
         }
         when (walletState.value) {
             is WalletViewModel.UIState.Success -> {
-//                cryptoState.value = prices(Dai(0.0), Pepe(0.0), UsdCoin(0.0), Weth(0.0))
                 val cryptoValues = (walletState.value as WalletViewModel.UIState.Success).tokens
-                DisplayTokenList(cryptoValues, viewModel)
+                DisplayTokenList(cryptoValues, viewModel::formatNumber)
+                DisplayTransactionButton(viewModel::getTransactions, searchQuery.value)
             }
             is WalletViewModel.UIState.Error -> {
                 Text(text = (walletState.value as WalletViewModel.UIState.Error).message)
@@ -77,38 +78,87 @@ fun WalletDisplay(
 
             WalletViewModel.UIState.Loading -> Unit
             WalletViewModel.UIState.Initializing -> Unit
-        }
-    }
-}
+            is WalletViewModel.UIState.SuccessTransactions -> {
+                val cryptoValues = (walletState.value as WalletViewModel.UIState.SuccessTransactions).tokens
+                DisplayTokenList(cryptoValues, viewModel::formatNumber)
 
-@Composable
-fun DisplayTokenList(tokens: List<Token>, viewModel: WalletViewModel) {
-    CryptoListItemHeader()
-    LazyColumn {
-        items(tokens.size) { token ->
-            val tokenItem = tokens[token]
-            if(tokenItem.balance.toDouble() > 0.0){
-                CryptoListItem(tokenItem.logoURL, tokenItem.name, viewModel.formatNumber(tokenItem.price.toDouble()), viewModel.formatNumber(tokenItem.balance.toDouble()), viewModel.formatNumber(tokenItem.usdValue))
+                val transactions = (walletState.value as WalletViewModel.UIState.SuccessTransactions).transactions
+                DisplayTransactions(transactions, viewModel::formatNumber)
+
+                DisplayTransactionButton(viewModel::getTransactions, searchQuery.value)
             }
         }
     }
 }
 
-//@Composable
-//fun DisplayTokenTransactions(tokenTransactions: List<Transactions>) {
-//    LazyColumn {
-//        items(tokens.size) { token ->
-//            val tokenItem = tokens[token]
-//            CryptoListItem(tokenItem.logoURL, tokenItem.name, tokenItem.balance.takeLast(10), tokenItem.price.toString())
-//        }
-//    }
-//}
+@Suppress("ktlint:standard:function-naming")
+@Composable
+fun DisplayTokenList(
+    tokens: List<Token>,
+    formatNumber: (Double) -> String,
+) {
+    CryptoListItemHeader()
+    LazyColumn {
+        items(tokens.size) { token ->
+            val tokenItem = tokens[token]
+            if (tokenItem.balance.toDouble() > 0.0) {
+                CryptoListItem(
+                    tokenItem.logoURL,
+                    tokenItem.name,
+                    formatNumber(tokenItem.price),
+                    formatNumber(tokenItem.balance.toDouble()),
+                    formatNumber(tokenItem.usdValue),
+                )
+            }
+        }
+    }
+}
 
+@Suppress("ktlint:standard:function-naming")
+@Composable
+fun DisplayTransactionButton(
+    getTransaction: (String) -> Unit,
+    wallet: String,
+) {
+    Button(
+        onClick = {
+            getTransaction(wallet)
+        },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+    ) {
+        Text(text = "Get Transaction Data")
+    }
+}
+
+@Suppress("ktlint:standard:function-naming")
+@Composable
+fun DisplayTransactions(
+    transactions: List<CryptoTransacation>,
+    formatNumber: (Double) -> String,
+) {
+    CryptoTrasactionItemHeader()
+    LazyColumn {
+        items(transactions.size) { transaction ->
+            val transactionItem = transactions[transaction]
+            CryptoTransactionItem(
+                transactionItem.type,
+                transactionItem.assetName,
+                formatNumber(transactionItem.tokenAmount.toDouble()),
+                transactionItem.Date.toString(),
+            )
+        }
+    }
+}
+
+@Suppress("ktlint:standard:function-naming")
 @Composable
 fun CryptoListItemHeader() {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly
+        horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
         ItemComposable("Logo")
         ItemComposable("Name")
@@ -117,36 +167,88 @@ fun CryptoListItemHeader() {
         ItemComposable("BalanceUSD")
     }
 }
+
+@Suppress("ktlint:standard:function-naming")
 @Composable
-fun CryptoListItem(logo: String, name: String, price:String, balance: String, balanceUSD: String,) {
+fun CryptoTrasactionItemHeader() {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly
+        horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
-        ImageFromUrl(url = logo)
-        ItemComposable(name)
-        ItemComposable(price)
-        ItemComposable(balance)
-        ItemComposable(balanceUSD)
+        ItemComposable("Type")
+        ItemComposable("Name")
+        ItemComposable("Balance")
+        ItemComposable("Date")
     }
 }
 
+@Suppress("ktlint:standard:function-naming")
 @Composable
-fun ImageFromUrl(url: String) {
+fun CryptoListItem(
+    logo: String,
+    name: String,
+    price: String,
+    balance: String,
+    balanceUSD: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        ImageFromUrl(url = logo, modifier = Modifier.weight(1f))
+        ItemComposable(name, modifier = Modifier.weight(1f))
+        ItemComposable(price, modifier = Modifier.weight(1f))
+        ItemComposable(balance, modifier = Modifier.weight(1f))
+        ItemComposable(balanceUSD, modifier = Modifier.weight(1f))
+    }
+}
+
+@Suppress("ktlint:standard:function-naming")
+@Composable
+fun CryptoTransactionItem(
+    type: String,
+    assetName: String,
+    tokenAmount: String,
+    Date: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        ItemComposable(type, modifier = Modifier.weight(1f))
+        ItemComposable(assetName, modifier = Modifier.weight(1f))
+        ItemComposable(tokenAmount, modifier = Modifier.weight(1f))
+        ItemComposable(Date, modifier = Modifier.weight(1f))
+    }
+}
+
+@Suppress("ktlint:standard:function-naming")
+@Composable
+fun ImageFromUrl(
+    url: String,
+    modifier: Modifier = Modifier,
+) {
     val imageLoader = rememberImagePainter(data = url)
 
     Image(
         painter = imageLoader,
         contentDescription = null,
-        modifier = Modifier.size(20.dp)
+        modifier =
+            modifier
+                .size(20.dp),
     )
 }
 
+@Suppress("ktlint:standard:function-naming")
 @Composable
-fun ItemComposable(itemName: String) {
-    Text(text = itemName, modifier = Modifier.padding(8.dp))
+fun ItemComposable(
+    itemName: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(text = itemName, modifier = modifier.padding(8.dp), textAlign = TextAlign.Start)
 }
 
+@Suppress("ktlint:standard:function-naming")
 @Preview
 @Composable
 fun PreviewCryptoGrid() {
@@ -154,24 +256,3 @@ fun PreviewCryptoGrid() {
 //        CryptoGrid(prices = Prices(Dai(1.0), pepe = Pepe(2.0), usdCoin = UsdCoin(3.0), weth = Weth(4.0)), onCryptoClicked = {})
     }
 }
-
-//@Composable
-//fun CryptoListItem(imageUrl: String, onPhotoClicked: (String) -> Unit) {
-//    val context = LocalContext.current
-//    val size = with(LocalDensity.current) { 180.dp.roundToPx() }
-////    val request = ImageRequest.Builder(context)
-////        .data(imageUrl)
-////        .size(size)
-////        .build()
-////    val painter = rememberAsyncImagePainter(request)
-//
-//    Image(
-//        painter = painter,
-//        contentDescription = null,
-//        modifier = Modifier
-//            .padding(4.dp)
-//            .size(180.dp)
-//            .clip(MaterialTheme.shapes.medium)
-//            .clickable { onPhotoClicked(imageUrl) }
-//    )
-//}
