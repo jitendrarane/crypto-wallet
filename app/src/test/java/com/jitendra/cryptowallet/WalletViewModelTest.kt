@@ -1,5 +1,6 @@
 package com.jitendra.cryptowallet
 
+import com.jitendra.cryptowallet.data.Token
 import com.jitendra.cryptowallet.data.network.AlchemyApiService
 import com.jitendra.cryptowallet.data.network.BackendService
 import com.jitendra.cryptowallet.data.network.TokenBalance
@@ -16,6 +17,7 @@ import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import retrofit2.Response
+import java.math.BigInteger
 
 class WalletViewModelTest {
     @Mock
@@ -67,6 +69,20 @@ class WalletViewModelTest {
                                 ),
                         ),
                 )
+            val expectedTokenContractAddress = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+            val expectedTokenBalance = "29414407533"
+
+            walletViewModel.tokens =
+                arrayListOf(
+                    Token(
+                        "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                        "mock_name",
+                        "mock_logo_url",
+                        0,
+                        BigInteger.ZERO,
+                        0.0,
+                    ),
+                )
             whenever(mockAlchemyApiService.getTokenBalances(any())).thenReturn(Response.success(expectedTokenBalancesResponse))
 
             // Call the function you want to test
@@ -75,6 +91,7 @@ class WalletViewModelTest {
             // Check the results using assertions
             val actualValue = walletViewModel.walletState.value
             assertTrue(actualValue is WalletViewModel.UIState.Success)
-            assertEquals(expectedTokenBalancesResponse.result.tokenBalances, (actualValue as WalletViewModel.UIState.Success).tokens)
+            assertEquals(expectedTokenContractAddress, (actualValue as WalletViewModel.UIState.Success).tokens[0].contractAddress)
+            assertEquals(expectedTokenBalance, (actualValue as WalletViewModel.UIState.Success).tokens[0].balance.toString())
         }
 }
